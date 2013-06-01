@@ -84,4 +84,48 @@ class IRShield
   def signal_delay
     4
   end
+
+  # バイトデータを波形にエンコードする
+  # bytedataはエンコードしたいデータの配列で、各要素は0-255である
+  # bytedataはMSB側からエンコードされる
+  # bitlenは送信したいビット数である
+  # formatは :AEHA, :NEC, :SONYだが、まずは:AEHAのみサポートする
+  def encode(bytedata, bitlen, format)
+
+    # AEHAの初期値
+    pre1 = 320;
+    pre0 = 160;
+    dh = 40;
+    d1 = 120;
+    d0 = 40;
+
+    if (format == :NEC)
+      pre1 = 900;
+      pre0 = 450;
+      dh = 56;
+      d1 = 56;
+      d0 = 169;
+    end
+
+    # preamble
+    encdata = [pre1, pre0];
+
+    # data
+    bitc = 0;
+    bytedata.each {|x|
+      7.downto(0) {|pos|
+        if x[pos] == 0
+          encdata.push(dh, d0);
+        else
+          encdata.push(dh, d1);
+        end
+        bitc += 1;
+        if bitc == bitlen
+          encdata.push(dh, 1000);
+          return encdata 
+        end
+      }
+    }
+    return encdata
+  end
 end
